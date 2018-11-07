@@ -50,11 +50,14 @@ const creditSchema = {
   }
 };
 
+const queue = require('./src/queue/queue')
+
 app.post(
   "/messages",
   bodyParser.json(),
   validate({ body: messageSchema }),
-  sendMessage
+  queue
+  //sendMessage
 );
 
 app.post(
