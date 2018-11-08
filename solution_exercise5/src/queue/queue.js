@@ -1,17 +1,23 @@
 const kue = require("kue");
-var util = require('util')
 let queue = kue.createQueue();
-
+const uuidv4 = require("uuid/v4");
 const sendMessage = require("../controllers/sendMessage");
 
 module.exports = function(req, res) {
-  let job = queue
-    .create("msg", {
-      body: util.inspect(req.body)
-    })
-    .save(function(err) {
-      if (!err) res.sendStatus(200).send(job.id);
-    });
+  let uniqueId = uuidv4();
+  let messObj = req.body;
+  messObj.uuid = uniqueId;
+  
+ 
+    let job = queue
+      .create("msg", {
+        messObj
+      })
+      .ttl(6000)
+      .removeOnComplete(false)
+      .save(function(err) {
+        if (!err) res.send(`queue entry number: ${job.id}`);
+      });
 };
 
 queue.on("job enqueue", function(id, type) {
@@ -19,6 +25,5 @@ queue.on("job enqueue", function(id, type) {
 });
 
 queue.process("msg", function(job, done) {
-  sendMessage(job.data.body, done)
+  sendMessage(job.data, done);
 });
-

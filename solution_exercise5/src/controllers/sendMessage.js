@@ -4,14 +4,14 @@ const getCredit = require("../clients/getCredit");
 
 const random = n => Math.floor(Math.random() * Math.floor(n));
 
-module.exports = function(reqBody, done) {
-  
-  const body = JSON.stringify(reqBody);
-
+module.exports = function(msgData, done) {
+  console.log(msgData);
+  const entireMsg = msgData
+  const body = JSON.stringify(msgData.messObj);
+  console.log(body);
   var query = getCredit();
 
   query.exec(function(err, credit) {
-    debugger
     if (err) return console.log(err);
 
     current_credit = credit[0].amount;
@@ -32,12 +32,15 @@ module.exports = function(reqBody, done) {
       };
 
       let postReq = http.request(postOptions);
-
+      //console.log(postReq);
+      
       postReq.on("response", postRes => {
+        //console.log(postRes, '<==');
         if (postRes.statusCode === 200) {
+          console.log('enters 200')
           saveMessage(
             {
-              ...reqBody,
+              ...entireMsg,
               status: "OK"
             },
             function(_result, error) {
@@ -50,10 +53,9 @@ module.exports = function(reqBody, done) {
           );
         } else {
           console.error("Error while sending message");
-
           saveMessage(
             {
-              ...reqBody,
+              ...entireMsg,
               status: "ERROR"
             },
             () => {
@@ -71,7 +73,7 @@ module.exports = function(reqBody, done) {
 
         saveMessage(
           {
-            ...reqBody,
+            ...entireMsg,
             status: "TIMEOUT"
           },
           () => {
@@ -79,14 +81,13 @@ module.exports = function(reqBody, done) {
           }
         );
       });
-
-      postReq.on("error", () => {});
-
+      
       postReq.write(body);
       postReq.end();
+      postReq.on("error", () => {});
+
     } else {
       console.log("No credit error")
     }
   });
-  done();
 };
